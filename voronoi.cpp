@@ -47,7 +47,6 @@ typedef Kernel::Line_2 Line_2;
 
 list<Point_2> pt_list;
 list<VD_Point_2>  vd_pt_list;
-Iso_rectangle_2 bbox;
 Kernel::FT incr_len = 75;
 void print_error_message(string s)
 {
@@ -58,29 +57,16 @@ void print_error_message(string s)
 int main()
 {
   Point_2 points[5] = { Point_2(0,0), Point_2(10,0), Point_2(10,10), Point_2(6,5), Point_2(4,1) };
-  double min_x = points[0].x();
-  double min_y = points[0].y();
-  double max_x = points[0].x();
-  double max_y = points[0].y();
-  // Calculate a bounding box of the Points ---------------
-  for(int i=0;i<5;i++)
-  {
-    min_x = min(min_x,points[i].x());
-    max_x = max(max_x,points[i].x());
-    min_y = min(min_y,points[i].y());
-    max_x = max(max_y,points[i].y());
-  }
-  CGAL::Point_2<VD_Kernel> UR(max_x,max_y), LL(min_x, min_y);
-  bbox = Iso_rectangle_2(LL,UR);
-  // increase the size of the Bounding box to handle extreme cases
-  bbox = Iso_rectangle_2(
-    bbox.min() + VD_Kernel::Vector_2(-incr_len, -incr_len),
-    bbox.max() + VD_Kernel::Vector_2(incr_len, incr_len)
-  );
+  
+
+
   // ---------------------------------------------------------
-  // Test inputs for L_inf Bisectors -------------------------
+  // Test inputs for L_inf Bisectors and VD -------------------------
+  pt_list.push_back(points[0]);
   pt_list.push_back(points[1]);
   pt_list.push_back(points[2]);
+  pt_list.push_back(points[3]);
+  pt_list.push_back(points[4]);
   int Option;
   cout<<"DEBUG: Select a Option"<<endl;
   cin>>Option;
@@ -132,7 +118,7 @@ int main()
     }
   }
     // -----------------------------------------------------------------------------------------
-    // Voronoi diagram for points
+    // Voronoi diagram for points in Linf Space
     // ------------------------------------------------------------------------------------------------
     else if (Option==2){
     {
@@ -155,37 +141,6 @@ int main()
       vd_pt_list.end(),
       *m_envelope_diagram
     );
-
-    //computes the bounding box
-    VD_Point_2 bottom_left(bbox.min().x(), bbox.min().y());
-    VD_Point_2 top_right(bbox.max().x(), bbox.max().y());
-
-    for (VD_Envelope_diagram_2::Vertex_const_iterator vit =
-          m_envelope_diagram->vertices_begin();
-         vit != m_envelope_diagram->vertices_end();
-         vit++
-    ) {
-      VD_Point_2 vp = VD_Point_2(vit->point());
-      if (CGAL::compare(vp.x(), bottom_left.x()) == CGAL::SMALLER)
-        bottom_left = VD_Point_2(vp.x(), bottom_left.y());
-      if (CGAL::compare(vp.y(), bottom_left.y()) == CGAL::SMALLER)
-        bottom_left = VD_Point_2(bottom_left.x(), vp.y());
-      if (CGAL::compare(vp.x(), top_right.x()) == CGAL::LARGER)
-        top_right = VD_Point_2(vp.x(), top_right.y());
-      if (CGAL::compare(vp.y(), top_right.y()) == CGAL::LARGER)
-        top_right = VD_Point_2(top_right.x(), vp.y());       
-    }
-
-    CGAL::Point_2<VD_Kernel> bl(to_double(bottom_left.x()), to_double(bottom_left.y()));
-    CGAL::Point_2<VD_Kernel> tr(to_double(top_right.x()), to_double(top_right.y()));
-
-    Kernel::FT incr_len= 50;
-
-    bbox = Iso_rectangle_2(
-      bl + VD_Kernel::Vector_2(-incr_len,-incr_len),
-      tr + VD_Kernel::Vector_2(incr_len,incr_len)
-    );
-
     // The edges of voronoi diagram
     cout<<"The Voronoi diagram is"<<endl;
     VD_Envelope_diagram_2::Edge_const_iterator eit;
@@ -223,5 +178,62 @@ int main()
     }
   }
  }
-  return 0;
-}
+ //Voronoi Diagram in L2 space for points
+ else if(Option == 3)
+ {
+        std::list<Point_2>::iterator it;
+        for (it = pt_list.begin(); it != pt_list.end(); ++it) {
+          vd_pt_list.push_back(VD_Point_2(it->x(), it->y()));
+        }
+        
+        if (vd_pt_list.empty()) {
+          print_error_message(("No mark selected"));
+          return -1;
+        }
+      L2_VD_Envelope_diagram_2 *m_envelope_diagram;
+      m_envelope_diagram = new L2_VD_Envelope_diagram_2();
+    CGAL::lower_envelope_3(
+      vd_pt_list.begin(),
+      vd_pt_list.end(),
+      *m_envelope_diagram
+    );
+    
+    // print the edges
+    for (L2_VD_Envelope_diagram_2::Edge_const_iterator eit =
+          m_envelope_diagram->edges_begin();
+         eit != m_envelope_diagram->edges_end();
+         eit++
+    ) {
+      if (eit->curve().is_segment()) {
+        Point_2 p1(
+          to_double(eit->curve().segment().source().x()),
+          to_double(eit->curve().segment().source().y())
+        );
+        Point_2 p2(
+          to_double(eit->curve().segment().target().x()),
+          to_double(eit->curve().segment().target().y())
+        );
+        cout<<"Segment whose endpoints are "<<p1<<" and "<<p2<<endl;
+      } else if (eit->curve().is_ray()) {
+        Point_2 p(
+          to_double(eit->curve().ray().source().x()),
+          to_double(eit->curve().ray().source().y())
+        );
+        CGAL::Direction_2<Kernel> d(
+          to_double(eit->curve().ray().direction().dx()),
+          to_double(eit->curve().ray().direction().dy())
+        );
+        cout<<"Ray emnating from "<<p<<" in direction "<<d<<endl;
+      } else if (eit->curve().is_line()) {
+        Line_2 l(
+          to_double(eit->curve().line().a()),
+          to_double(eit->curve().line().b()),
+          to_double(eit->curve().line().c())
+        );
+        cout<<"Line of form ax+by+c with a,b,c as "<<l<<endl;
+      }
+    } 
+  }
+  return 0;  
+ }
+  
