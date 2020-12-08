@@ -18,6 +18,10 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/convex_hull_2.h>
 
+#include <CGAL/CORE_algebraic_number_traits.h>
+#include <CGAL/Arr_conic_traits_2.h>
+#include "CGAL/L2_segment_voronoi_traits_2.h"
+
 using namespace std;
 typedef CGAL::Cartesian <double> Kernel;
 struct Gt_inf
@@ -42,12 +46,14 @@ typedef CGAL::L2_voronoi_traits_2<VD_Kernel>            L2_VD_Traits_3;
 typedef L2_VD_Traits_3::Surface_3                       L2_VD_Surface_3;
 typedef CGAL::Envelope_diagram_2<L2_VD_Traits_3>        L2_VD_Envelope_diagram_2;
 
+
 typedef Kernel::Point_2 Point_2;
 typedef Kernel::Line_2 Line_2;
+typedef Kernel::Segment_2 Segment_2;
 
 list<Point_2> pt_list;
 list<VD_Point_2>  vd_pt_list;
-Kernel::FT incr_len = 75;
+
 void print_error_message(string s)
 {
   cerr<<s<<endl;
@@ -233,6 +239,57 @@ int main()
         cout<<"Line of form ax+by+c with a,b,c as "<<l<<endl;
       }
     } 
+  }
+  else if(Option == 4)
+  {
+    list<Segment_2> seg_list;
+    for(int i=0;i<4;i+=2)
+    {
+      seg_list.push_back(Segment_2(points[i],points[i+1]));
+    }
+    cout<<"The given segments are "<<endl;
+    list<Segment_2>::iterator it;
+    for(it=seg_list.begin();it != seg_list.end(); it++)
+    {
+      cout<<"Segment with end points "<< it->source() <<" , "<<it->target()<<endl;
+    }
+    // Find Region R
+
+    // find ln y coord
+    double ln = max(seg_list.begin()->source().y(), seg_list.begin()->target().y());
+    for(it=seg_list.begin();it != seg_list.end(); it++)
+    {
+      ln = min(ln, max(it->source().y(), it->target().y()));
+    }
+
+
+    // find ls y coord
+    double ls = min(seg_list.begin()->source().y(), seg_list.begin()->target().y());
+    for(it=seg_list.begin();it != seg_list.end(); it++)
+    {
+      ln = max(ln, min(it->source().y(), it->target().y()));
+    }
+
+    // find le x coord
+    double le = max(seg_list.begin()->source().x(), seg_list.begin()->target().x());
+    for(it=seg_list.begin();it != seg_list.end(); it++)
+    {
+      le = min(le, max(it->source().x(), it->target().x()));
+    }
+
+    // find lw x coord
+    double lw = min(seg_list.begin()->source().x(), seg_list.begin()->target().x());
+    for(it=seg_list.begin();it != seg_list.end(); it++)
+    {
+      lw = max(lw, min(it->source().x(), it->target().x()));
+    }
+    cout<<endl;
+    cout<<"The Region R is "<<endl;
+    cout<<"ls = "<<ls<<" ln= "<<ln<<endl;
+    cout<<"lw = "<<lw<<" le= "<<le<<endl;
+
+    
+
   }
   return 0;  
  }
