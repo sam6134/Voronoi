@@ -1,5 +1,0 @@
-/Users/samarthsingh/Voronoi/CMakeFiles/cgal_check_build_system.dir
-/Users/samarthsingh/Voronoi/CMakeFiles/rebuild_cache.dir
-/Users/samarthsingh/Voronoi/CMakeFiles/edit_cache.dir
-/Users/samarthsingh/Voronoi/CMakeFiles/ALL_CGAL_TARGETS.dir
-/Users/samarthsingh/Voronoi/CMakeFiles/voronoi.dir
