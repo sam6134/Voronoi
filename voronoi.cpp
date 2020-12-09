@@ -120,35 +120,7 @@ bool intersectsRegion(Segment_2* s, double y, double x, int a, Segment_2* sMod)
       (*sMod) = Segment_2(*p1, *p2);
       return true;
     }
-    // if one intersection
-    if(result1)
-    {
-      // source and intx
-      if(PointInRegion(s->source(),y,x,a))
-      {
-        const Point_2* p1 = boost::get<Point_2 >(&*result1);
-        (*sMod) = Segment_2(s->source(), *p1);
-      }else{
-        const Point_2* p1 = boost::get<Point_2 >(&*result1);
-        (*sMod) = Segment_2(*p1, s->target());  
-        }
-      return true;
-    }
-
-    if(result2)
-    {
-      // source and intx
-      if(PointInRegion(s->source(),y,x,a))
-      {
-        const Point_2* p2 = boost::get<Point_2 >(&*result2);
-        (*sMod) = Segment_2(s->source(), *p2);
-      }else{
-        const Point_2* p2 = boost::get<Point_2 >(&*result2);
-        (*sMod) = Segment_2(*p2, s->target());  
-        }
-      return true;
-    }
-    // else no intx return false
+    // else if both intxs are not there 
 
   return false;
 }
@@ -431,10 +403,7 @@ int main()
     list<Segment_2> Quadrant1;
     for(it = seg_list.begin();it!=seg_list.end();it++)
     {
-      if(isInRegion(&(*it),ls,lw,1))
-      {
-        Quadrant1.push_back(*it);
-      }else if(intersectsRegion(&(*it),ls,lw,1,sMod))
+      if(intersectsRegion(&(*it),ls,lw,1,sMod))
       {
         Quadrant1.push_back(*sMod);
       }
@@ -452,10 +421,7 @@ int main()
     list<Segment_2> Quadrant2;
     for(it = seg_list.begin();it!=seg_list.end();it++)
     {
-      if(isInRegion(&(*it),ls,le,2))
-      {
-        Quadrant2.push_back(*it);
-      }else if(intersectsRegion(&(*it),ls,le,2,sMod))
+      if(intersectsRegion(&(*it),ls,le,2,sMod))
       {
         Quadrant2.push_back(*sMod);
       }
@@ -472,10 +438,7 @@ int main()
     list<Segment_2> Quadrant3;
     for(it = seg_list.begin();it!=seg_list.end();it++)
     {
-      if(isInRegion(&(*it),ln,le,3))
-      {
-        Quadrant3.push_back(*it);
-      }else if(intersectsRegion(&(*it),ln,le,3,sMod))
+      if(intersectsRegion(&(*it),ln,le,3,sMod))
       {
         Quadrant3.push_back(*sMod);
       }
@@ -492,10 +455,7 @@ int main()
     list<Segment_2> Quadrant4;
     for(it = seg_list.begin();it!=seg_list.end();it++)
     {
-      if(isInRegion(&(*it),ln,lw,4))
-      {
-        Quadrant4.push_back(*it);
-      }else if(intersectsRegion(&(*it),ln,lw,4,sMod))
+      if(intersectsRegion(&(*it),ln,lw,4,sMod))
       {
         Quadrant4.push_back(*sMod);
       }
