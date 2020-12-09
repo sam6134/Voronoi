@@ -1,6 +1,7 @@
 #include <iostream>
 #include <list>
 #include<string>
+#include <CGAL/intersections.h>
 #include <CGAL/Point_2.h>
 #include <CGAL/Line_2.h>
 #include <CGAL/Cartesian.h>
@@ -50,6 +51,8 @@ typedef CGAL::Envelope_diagram_2<L2_VD_Traits_3>        L2_VD_Envelope_diagram_2
 typedef Kernel::Point_2 Point_2;
 typedef Kernel::Line_2 Line_2;
 typedef Kernel::Segment_2 Segment_2;
+typedef Kernel::Intersect_2 Intersect_2;
+typedef Kernel::Line_2 Line_2;
 
 list<Point_2> pt_list;
 list<VD_Point_2>  vd_pt_list;
@@ -59,10 +62,140 @@ void print_error_message(string s)
   cerr<<s<<endl;
   return;
 }
+// to check whether a point lies in a quadrants as described in the paper
+bool PointInRegion(Point_2 p, double y, double x,int a)
+{
+  // for quad 1
+  if(a == 1)
+  {
+    if(p.x()>=x && p.y()>=y)
+    {
+      return true;
+    }else return false;
+  }
+  // for quad 2
+  if(a == 2)
+  {
+    if(p.x()<=x && p.y()>=y)
+    {
+      return true;
+    }else return false;
+  }
+  // for quad 3
+  if(a == 3)
+  {
+    if(p.x()<=x && p.y()<=y)
+    {
+      return true;
+    }else return false;
+  }
+  // for quad 4
+  if(a == 4)
+  {
+    if(p.x()>=x && p.y()<=y)
+    {
+      return true;
+    }else return false;
+  }
+  return false;
+}
+
+// function to check whether a segment lies partially inside a region
+bool intersectsRegion(Segment_2* s, double y, double x, int a, Segment_2* sMod)
+{
+
+    // find intx points with both the lines
+    Line_2 lin(0,1,-y);
+    CGAL::cpp11::result_of<Intersect_2(Segment_2, Line_2)>::type
+    result1 = CGAL::intersection(*s, lin);
+
+    Line_2 lin1(1,0,-x);
+    CGAL::cpp11::result_of<Intersect_2(Segment_2, Line_2)>::type
+    result2 = CGAL::intersection(*s, lin1);
+    // both intersections
+    if(result1 && result2)
+    {
+      const Point_2* p1 = boost::get<Point_2 >(&*result1);
+      const Point_2* p2 = boost::get<Point_2 >(&*result2);
+      (*sMod) = Segment_2(*p1, *p2);
+      return true;
+    }
+    // if one intersection
+    if(result1)
+    {
+      // source and intx
+      if(PointInRegion(s->source(),y,x,a))
+      {
+        const Point_2* p1 = boost::get<Point_2 >(&*result1);
+        (*sMod) = Segment_2(s->source(), *p1);
+      }else{
+        const Point_2* p1 = boost::get<Point_2 >(&*result1);
+        (*sMod) = Segment_2(*p1, s->target());  
+        }
+      return true;
+    }
+
+    if(result2)
+    {
+      // source and intx
+      if(PointInRegion(s->source(),y,x,a))
+      {
+        const Point_2* p2 = boost::get<Point_2 >(&*result2);
+        (*sMod) = Segment_2(s->source(), *p2);
+      }else{
+        const Point_2* p2 = boost::get<Point_2 >(&*result2);
+        (*sMod) = Segment_2(*p2, s->target());  
+        }
+      return true;
+    }
+    // else no intx return false
+
+  return false;
+}
+
+bool isInRegion(Segment_2* s, double y, double x, int a)
+{
+  // for quad 1
+  if(a == 1)
+  {
+    if(s->source().x()>=x && s->target().x()>=x && s->source().y()>=y && s->target().y()>=y)
+    {
+      return true;
+    }else return false;
+  }
+
+  // for quad 2
+  if(a == 2)
+  {
+    if(s->source().x()<=x && s->target().x()<=x && s->source().y()>=y && s->target().y()>=y)
+    {
+      return true;
+    }else return false;
+  }
+
+  // for quad 3
+  if(a == 3)
+  {
+    if(s->source().x()<=x && s->target().x()<=x && s->source().y()<=y && s->target().y()<=y)
+    {
+      return true;
+    }else return false;
+  }
+
+  // for quad 4
+  if(a == 4)
+  {
+    if(s->source().x()>=x && s->target().x()>=x && s->source().y()<=y && s->target().y()<=y)
+    {
+      return true;
+    }else return false;
+  }
+ return false;
+}
 
 int main()
 {
-  Point_2 points[5] = { Point_2(0,0), Point_2(10,0), Point_2(10,10), Point_2(6,5), Point_2(4,1) };
+  Point_2 points[6] = { Point_2(0,0), Point_2(10,4), Point_2(10,10), Point_2(6,5), Point_2(4,1), Point_2(3,7) };
   
 
 
@@ -73,6 +206,7 @@ int main()
   pt_list.push_back(points[2]);
   pt_list.push_back(points[3]);
   pt_list.push_back(points[4]);
+  pt_list.push_back(points[5]);
   int Option;
   cout<<"DEBUG: Select a Option"<<endl;
   cin>>Option;
@@ -243,7 +377,8 @@ int main()
   else if(Option == 4)
   {
     list<Segment_2> seg_list;
-    for(int i=0;i<4;i+=2)
+    // test segments
+    for(int i=0;i<6;i+=2)
     {
       seg_list.push_back(Segment_2(points[i],points[i+1]));
     }
@@ -288,8 +423,90 @@ int main()
     cout<<"ls = "<<ls<<" ln= "<<ln<<endl;
     cout<<"lw = "<<lw<<" le= "<<le<<endl;
 
-    
+    // dummy segment to store modified segment
+    Segment_2* sMod = new Segment_2(Point_2(1,1), Point_2(1,1));
 
+
+    // find segments straddling quadrant-1
+    list<Segment_2> Quadrant1;
+    for(it = seg_list.begin();it!=seg_list.end();it++)
+    {
+      if(isInRegion(&(*it),ls,lw,1))
+      {
+        Quadrant1.push_back(*it);
+      }else if(intersectsRegion(&(*it),ls,lw,1,sMod))
+      {
+        Quadrant1.push_back(*sMod);
+      }
+    }
+
+    // print the quad-1 segments
+     cout<<"Quadrant-1"<<endl;
+    for(it = Quadrant1.begin(); it != Quadrant1.end(); it++)
+    {
+      cout<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+    }
+
+
+    // find segments straddling quadrant-2
+    list<Segment_2> Quadrant2;
+    for(it = seg_list.begin();it!=seg_list.end();it++)
+    {
+      if(isInRegion(&(*it),ls,le,2))
+      {
+        Quadrant2.push_back(*it);
+      }else if(intersectsRegion(&(*it),ls,le,2,sMod))
+      {
+        Quadrant2.push_back(*sMod);
+      }
+    }
+
+    // print the quad-2 segments
+     cout<<"Quadrant-2"<<endl;
+    for(it = Quadrant2.begin(); it != Quadrant2.end(); it++)
+    {
+      cout<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+    }
+
+    // find segments straddling quadrant-3
+    list<Segment_2> Quadrant3;
+    for(it = seg_list.begin();it!=seg_list.end();it++)
+    {
+      if(isInRegion(&(*it),ln,le,3))
+      {
+        Quadrant3.push_back(*it);
+      }else if(intersectsRegion(&(*it),ln,le,3,sMod))
+      {
+        Quadrant3.push_back(*sMod);
+      }
+    }
+
+    // print the quad-3 segments
+     cout<<"Quadrant-3"<<endl;
+    for(it = Quadrant3.begin(); it != Quadrant3.end(); it++)
+    {
+      cout<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+    }
+
+    // find segments straddling quadrant-4
+    list<Segment_2> Quadrant4;
+    for(it = seg_list.begin();it!=seg_list.end();it++)
+    {
+      if(isInRegion(&(*it),ln,lw,4))
+      {
+        Quadrant4.push_back(*it);
+      }else if(intersectsRegion(&(*it),ln,lw,4,sMod))
+      {
+        Quadrant4.push_back(*sMod);
+      }
+    }
+
+    // print the quad-4 segments
+     cout<<"Quadrant-4"<<endl;
+    for(it = Quadrant4.begin(); it != Quadrant4.end(); it++)
+    {
+      cout<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+    }
   }
   return 0;  
  }

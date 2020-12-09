@@ -77,6 +77,8 @@ list
 -
 string
 -
+CGAL/intersections.h
+-
 CGAL/Point_2.h
 -
 CGAL/Line_2.h
