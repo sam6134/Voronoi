@@ -3,6 +3,13 @@
 #include <string>
 
 #include <CGAL/intersections.h>
+// envelope
+#include <CGAL/Arr_segment_traits_2.h>
+#include <CGAL/Exact_rational.h>
+#include <CGAL/Arr_curve_data_traits_2.h>
+#include <CGAL/Envelope_diagram_1.h>
+#include <CGAL/envelope_2.h>
+//
 #include <CGAL/Point_2.h>
 #include <CGAL/Line_2.h>
 #include <CGAL/Cartesian.h>
@@ -23,11 +30,6 @@
 #include <CGAL/CORE_algebraic_number_traits.h>
 #include <CGAL/Arr_conic_traits_2.h>
 #include "CGAL/L2_segment_voronoi_traits_2.h"
-
-/// For Envelopes
-#include <CGAL/envelope_2.h>
-#include <CGAL/Envelope_diagram_1.h>
-
 
 
 using namespace std;
@@ -485,8 +487,193 @@ int main()
     }
 
     /// Determining the Envelope
+    {
+    typedef CGAL::Cartesian<double>                         Kernel;
+    typedef CGAL::Arr_segment_traits_2<Kernel>              Segment_traits_2;
+    typedef Segment_traits_2::X_monotone_curve_2            Segment_2_monotone;
+    typedef CGAL::Arr_curve_data_traits_2<Segment_traits_2,
+                                          char>             Traits_2;
+    typedef Traits_2::Point_2                               Point_2_monotone;
+    typedef Traits_2::X_monotone_curve_2                    Labeled_segment_2;
+    typedef CGAL::Envelope_diagram_1<Traits_2>              Diagram_1;
+
+      std::list<Labeled_segment_2>   montone_list;
+      char dummy = 'A';
+      list<Point_2> Envelope1;
+      for(it = Quadrant1.begin();it!=Quadrant1.end();it++)
+      {
+        if(it->source() == it->target()) 
+        {
+          Envelope1.push_back(it->source());
+          continue;
+        }
+        montone_list.push_back(Labeled_segment_2 (Segment_2_monotone \
+        (Point_2_monotone(it->source().x(), it->source().y()),Point_2_monotone(it->target().x(), it->target().y())),dummy));
+        dummy++;
+      }
+      Diagram_1 min_diag;
+      cerr<<"chk1"<<endl;
+      upper_envelope_x_monotone_2 (montone_list.begin(), montone_list.end(),
+                               min_diag);
+      cerr<<"upper env done"<<endl; 
+      Diagram_1::Edge_const_handle     e = min_diag.leftmost();
+      Diagram_1::Vertex_const_handle   v;
+      Diagram_1::Curve_const_iterator  cit;
+      while (e != min_diag.rightmost())
+      {
+        cerr << "Edge:";
+        if (! e->is_empty())
+        {
+          for (cit = e->curves_begin(); cit != e->curves_end(); ++cit)
+            cerr << ' ' << cit->data();
+        }
+        else
+          cerr << " [empty]";
+        cerr << std::endl;
+        v = e->right();
+        cerr << "Vertex (" << v->point() << "):";
+        for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
+          cerr << ' ' << cit->data();
+        cerr << std::endl;
+        e = v->right();
+      }
+
+
+
+      // quad 2
+      montone_list.clear();
+      dummy = 'A';
+      list<Point_2> Envelope2;
+      for(it = Quadrant2.begin();it!=Quadrant2.end();it++)
+      {
+        if(it->source() == it->target()) 
+        {
+          Envelope2.push_back(it->source());
+          continue;
+        }
+        montone_list.push_back(Labeled_segment_2 (Segment_2_monotone \
+        (Point_2_monotone(it->source().x(), it->source().y()),Point_2_monotone(it->target().x(), it->target().y())),dummy));
+        dummy++;
+      }
+
+      Diagram_1 min_diag2;
+      cerr<<"chk1"<<endl;
+      upper_envelope_x_monotone_2 (montone_list.begin(), montone_list.end(),
+                               min_diag2);
+      cerr<<"upper env done"<<endl; 
+      e = min_diag2.leftmost();
+      
+      while (e != min_diag2.rightmost())
+      {
+        cerr << "Edge:";
+        if (! e->is_empty())
+        {
+          for (cit = e->curves_begin(); cit != e->curves_end(); ++cit)
+            cerr << ' ' << cit->data();
+        }
+        else
+          cerr << " [empty]";
+        cerr << std::endl;
+        v = e->right();
+        cerr << "Vertex (" << v->point() << "):";
+        for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
+          cerr << ' ' << cit->data();
+        cerr << std::endl;
+        e = v->right();
+      }
+
+
+      // quad 3
+      montone_list.clear();
+      dummy = 'A';
+      list<Point_2> Envelope3;
+      for(it = Quadrant3.begin();it!=Quadrant3.end();it++)
+      {
+        if(it->source() == it->target()) 
+        {
+          Envelope3.push_back(it->source());
+          continue;
+        }
+        montone_list.push_back(Labeled_segment_2 (Segment_2_monotone \
+        (Point_2_monotone(it->source().x(), it->source().y()),Point_2_monotone(it->target().x(), it->target().y())),dummy));
+        dummy++;
+      }
+      Diagram_1 min_diag3;
+      cerr<<"chk1"<<endl;
+      lower_envelope_x_monotone_2 (montone_list.begin(), montone_list.end(),
+                               min_diag3);
+      cerr<<"upper env done"<<endl; 
+      e = min_diag3.leftmost();
+      
+      while (e != min_diag3.rightmost())
+      {
+        cerr << "Edge:";
+        if (! e->is_empty())
+        {
+          for (cit = e->curves_begin(); cit != e->curves_end(); ++cit)
+            cerr << ' ' << cit->data();
+        }
+        else
+          cerr << " [empty]";
+        cerr << std::endl;
+        v = e->right();
+        cerr << "Vertex (" << v->point() << "):";
+        for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
+          cerr << ' ' << cit->data();
+        cerr << std::endl;
+        e = v->right();
+      }
+
+
+
+
+      // quad4
+      montone_list.clear();
+      dummy = 'A';
+      list<Point_2> Envelope4;
+      for(it = Quadrant4.begin();it!=Quadrant4.end();it++)
+      {
+        if(it->source() == it->target()) 
+        {
+          Envelope4.push_back(it->source());
+          continue;
+        }
+        montone_list.push_back(Labeled_segment_2 (Segment_2_monotone \
+        (Point_2_monotone(it->source().x(), it->source().y()),Point_2_monotone(it->target().x(), it->target().y())),dummy));
+        dummy++;
+      }
+      Diagram_1 min_diag4;
+      cerr<<"chk1"<<endl;
+      lower_envelope_x_monotone_2 (montone_list.begin(), montone_list.end(),
+                               min_diag4);
+      cerr<<"upper env done"<<endl; 
+      e = min_diag4.leftmost();
+      
+      
+      while (e != min_diag4.rightmost())
+      {
+        cerr << "Edge:";
+        if (! e->is_empty())
+        {
+          for (cit = e->curves_begin(); cit != e->curves_end(); ++cit)
+            cerr << ' ' << cit->data();
+        }
+        else
+          cerr << " [empty]";
+        cerr << std::endl;
+        v = e->right();
+        cerr << "Vertex (" << v->point() << "):";
+        for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
+          cerr << ' ' << cit->data();
+        cerr << std::endl;
+        e = v->right();
+      }
+
+    }
+    
   }
 
   return 0;  
- }
+}
+
   
