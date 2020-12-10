@@ -4,3 +4,5 @@ CMakeCache.txt
 Makefile
 .vscode/
 voronoi
+shapes.txt
+bokeh_plot.html

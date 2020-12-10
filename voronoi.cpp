@@ -1,6 +1,7 @@
 #include <iostream>
 #include <list>
-#include<string>
+#include <string>
+
 #include <CGAL/intersections.h>
 #include <CGAL/Point_2.h>
 #include <CGAL/Line_2.h>
@@ -22,6 +23,12 @@
 #include <CGAL/CORE_algebraic_number_traits.h>
 #include <CGAL/Arr_conic_traits_2.h>
 #include "CGAL/L2_segment_voronoi_traits_2.h"
+
+/// For Envelopes
+#include <CGAL/envelope_2.h>
+#include <CGAL/Envelope_diagram_1.h>
+
+
 
 using namespace std;
 typedef CGAL::Cartesian <double> Kernel;
@@ -48,11 +55,11 @@ typedef L2_VD_Traits_3::Surface_3                       L2_VD_Surface_3;
 typedef CGAL::Envelope_diagram_2<L2_VD_Traits_3>        L2_VD_Envelope_diagram_2;
 
 
-typedef Kernel::Point_2 Point_2;
-typedef Kernel::Line_2 Line_2;
-typedef Kernel::Segment_2 Segment_2;
-typedef Kernel::Intersect_2 Intersect_2;
-typedef Kernel::Line_2 Line_2;
+typedef Kernel::Point_2                                 Point_2;
+typedef Kernel::Line_2                                  Line_2;
+typedef Kernel::Segment_2                               Segment_2;
+typedef Kernel::Intersect_2                             Intersect_2;
+typedef Kernel::Line_2                                  Line_2;
 
 list<Point_2> pt_list;
 list<VD_Point_2>  vd_pt_list;
@@ -62,6 +69,22 @@ void print_error_message(string s)
   cerr<<s<<endl;
   return;
 }
+void print_ray(Point_2 p, CGAL::Direction_2<Kernel> d){
+  cout<<"R "<<p<<" "<<d<<" \n";
+}
+// Plot the segment p1---p2
+void print_segment(Point_2 p1 , Point_2 p2){
+  cout<<"S "<<p1 <<" "<< p2 << " \n";
+}
+// Plot the point p
+void print_point(Point_2 p){
+  cout<<"P "<<p << " \n";
+}
+// Plot the line a.x + b.y + c = 0
+void print_line(Line_2 l){
+  printf("L %f %f %f \n",l.a(),l.b(),l.c());
+};
+
 // to check whether a point lies in a quadrants as described in the paper
 bool PointInRegion(Point_2 p, double y, double x,int a)
 {
@@ -179,8 +202,13 @@ int main()
   pt_list.push_back(points[3]);
   pt_list.push_back(points[4]);
   pt_list.push_back(points[5]);
+
+  for( auto x: pt_list){
+    print_point(x);
+  }
+
   int Option;
-  cout<<"DEBUG: Select a Option"<<endl;
+  cerr<<"DEBUG: Select a Option"<<endl;
   cin>>Option;
   // L_Inf Bisector -----------------------------------------------------------------
   if(Option==1){
@@ -254,7 +282,7 @@ int main()
       *m_envelope_diagram
     );
     // The edges of voronoi diagram
-    cout<<"The Voronoi diagram is"<<endl;
+    cerr<<"The Voronoi diagram is"<<endl;
     VD_Envelope_diagram_2::Edge_const_iterator eit;
     for (eit = m_envelope_diagram->edges_begin();
     eit != m_envelope_diagram->edges_end(); eit++) {
@@ -268,7 +296,8 @@ int main()
           to_double(eit->curve().segment().target().x()),
           to_double(eit->curve().segment().target().y())
         );
-        cout<<"A segment "<<p1<<" and "<<p2<<endl;
+        cerr<<"A segment "<<p1<<" and "<<p2<<endl;
+        print_segment(p1,p2);
       } else if (eit->curve().is_ray()) {
         Point_2 p(
           to_double(eit->curve().ray().source().x()),
@@ -278,7 +307,8 @@ int main()
           to_double(eit->curve().ray().direction().dx()),
           to_double(eit->curve().ray().direction().dy())
         );
-        cout<<"A Ray emanating from "<<p<<" in direction "<<d<<endl;
+        cerr<<"A Ray emanating from "<<p<<" in direction "<<d<<endl;
+        print_ray(p,d);
       } else if (eit->curve().is_line()) {
         Line_2 l(
           to_double(eit->curve().line().a()),
@@ -325,7 +355,8 @@ int main()
           to_double(eit->curve().segment().target().x()),
           to_double(eit->curve().segment().target().y())
         );
-        cout<<"Segment whose endpoints are "<<p1<<" and "<<p2<<endl;
+        cerr<<"Segment whose endpoints are "<<p1<<" and "<<p2<<endl;
+        print_segment(p1,p2);
       } else if (eit->curve().is_ray()) {
         Point_2 p(
           to_double(eit->curve().ray().source().x()),
@@ -335,14 +366,16 @@ int main()
           to_double(eit->curve().ray().direction().dx()),
           to_double(eit->curve().ray().direction().dy())
         );
-        cout<<"Ray emnating from "<<p<<" in direction "<<d<<endl;
+        cerr<<"Ray emnating from "<<p<<" in direction "<<d<<endl;
+        print_ray(p,d);
       } else if (eit->curve().is_line()) {
         Line_2 l(
           to_double(eit->curve().line().a()),
           to_double(eit->curve().line().b()),
           to_double(eit->curve().line().c())
         );
-        cout<<"Line of form ax+by+c with a,b,c as "<<l<<endl;
+        cerr<<"Line of form ax+by+c with a,b,c as "<<l<<endl;
+        print_line(l);
       }
     } 
   }
@@ -354,120 +387,106 @@ int main()
     {
       seg_list.push_back(Segment_2(points[i],points[i+1]));
     }
-    cout<<"The given segments are "<<endl;
+    cerr<<"The given segments are "<<endl;
     list<Segment_2>::iterator it;
     for(it=seg_list.begin();it != seg_list.end(); it++)
     {
-      cout<<"Segment with end points "<< it->source() <<" , "<<it->target()<<endl;
+      cerr<<"Segment with end points "<< it->source() <<" , "<<it->target()<<endl;
+      print_segment(it->source(),it->target());
     }
     // Find Region R
 
     // find ln y coord
     double ln = max(seg_list.begin()->source().y(), seg_list.begin()->target().y());
-    for(it=seg_list.begin();it != seg_list.end(); it++)
-    {
-      ln = min(ln, max(it->source().y(), it->target().y()));
-    }
-
-
     // find ls y coord
     double ls = min(seg_list.begin()->source().y(), seg_list.begin()->target().y());
-    for(it=seg_list.begin();it != seg_list.end(); it++)
-    {
-      ln = max(ln, min(it->source().y(), it->target().y()));
-    }
-
     // find le x coord
     double le = max(seg_list.begin()->source().x(), seg_list.begin()->target().x());
-    for(it=seg_list.begin();it != seg_list.end(); it++)
-    {
-      le = min(le, max(it->source().x(), it->target().x()));
-    }
-
     // find lw x coord
     double lw = min(seg_list.begin()->source().x(), seg_list.begin()->target().x());
     for(it=seg_list.begin();it != seg_list.end(); it++)
     {
+      ln = min(ln, max(it->source().y(), it->target().y()));
+      ls = max(ls, min(it->source().y(), it->target().y()));
+      le = min(le, max(it->source().x(), it->target().x()));
       lw = max(lw, min(it->source().x(), it->target().x()));
     }
-    cout<<endl;
-    cout<<"The Region R is "<<endl;
-    cout<<"ls = "<<ls<<" ln= "<<ln<<endl;
-    cout<<"lw = "<<lw<<" le= "<<le<<endl;
+    cerr<<endl;
+    cerr<<"The Region R is "<<endl;
+    cerr<<"ls = "<<ls<<" ln= "<<ln<<endl;
+    cerr<<"lw = "<<lw<<" le= "<<le<<endl;
 
     // dummy segment to store modified segment
     Segment_2* sMod = new Segment_2(Point_2(1,1), Point_2(1,1));
 
 
-    // find segments straddling quadrant-1
     list<Segment_2> Quadrant1;
+    list<Segment_2> Quadrant2;
+    list<Segment_2> Quadrant3;
+    list<Segment_2> Quadrant4;
+
+
     for(it = seg_list.begin();it!=seg_list.end();it++)
     {
+
+      // find segments straddling quadrant-1
       if(intersectsRegion(&(*it),ls,lw,1,sMod))
       {
         Quadrant1.push_back(*sMod);
       }
-    }
 
-    // print the quad-1 segments
-     cout<<"Quadrant-1"<<endl;
-    for(it = Quadrant1.begin(); it != Quadrant1.end(); it++)
-    {
-      cout<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
-    }
-
-
-    // find segments straddling quadrant-2
-    list<Segment_2> Quadrant2;
-    for(it = seg_list.begin();it!=seg_list.end();it++)
-    {
+      // find segments straddling quadrant-2
       if(intersectsRegion(&(*it),ls,le,2,sMod))
       {
         Quadrant2.push_back(*sMod);
       }
-    }
 
-    // print the quad-2 segments
-     cout<<"Quadrant-2"<<endl;
-    for(it = Quadrant2.begin(); it != Quadrant2.end(); it++)
-    {
-      cout<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
-    }
-
-    // find segments straddling quadrant-3
-    list<Segment_2> Quadrant3;
-    for(it = seg_list.begin();it!=seg_list.end();it++)
-    {
+      // find segments straddling quadrant-3
       if(intersectsRegion(&(*it),ln,le,3,sMod))
       {
         Quadrant3.push_back(*sMod);
       }
-    }
 
-    // print the quad-3 segments
-     cout<<"Quadrant-3"<<endl;
-    for(it = Quadrant3.begin(); it != Quadrant3.end(); it++)
-    {
-      cout<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
-    }
-
-    // find segments straddling quadrant-4
-    list<Segment_2> Quadrant4;
-    for(it = seg_list.begin();it!=seg_list.end();it++)
-    {
+      // find segments straddling quadrant-4
       if(intersectsRegion(&(*it),ln,lw,4,sMod))
       {
         Quadrant4.push_back(*sMod);
       }
     }
 
+    // print the quad-1 segments
+    cerr<<"Quadrant-1"<<endl;
+    for(it = Quadrant1.begin(); it != Quadrant1.end(); it++)
+    {
+      cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+      print_segment(it->source(), it->target());
+    }
+    // print the quad-2 segments
+    cerr<<"Quadrant-2"<<endl;
+    for(it = Quadrant2.begin(); it != Quadrant2.end(); it++)
+    {
+      cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+      print_segment(it->source(), it->target());
+    }
+    // print the quad-3 segments
+    cerr<<"Quadrant-3"<<endl;
+    for(it = Quadrant3.begin(); it != Quadrant3.end(); it++)
+    {
+      cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+      print_segment(it->source(), it->target());
+
+    }
     // print the quad-4 segments
-     cout<<"Quadrant-4"<<endl;
+    cerr<<"Quadrant-4"<<endl;
     for(it = Quadrant4.begin(); it != Quadrant4.end(); it++)
     {
-      cout<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+      cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
+      print_segment(it->source(), it->target());
     }
+
+    /// Determining the Envelope
   }
+
   return 0;  
  }
   
