@@ -74,12 +74,14 @@ list<VD_Point_2>  vd_pt_list;
 struct HullSegment
 {
   Segment_2 e1;
-  Point_2 curr;
   Ray_2 b;
-  Segment_2 next;
+  Segment_2 e2;
 };
 
-
+bool PointComp(Point_2 a, Point_2 b)
+{
+  return a.x()>b.x();
+}
 void print_error_message(string s)
 {
   cerr<<s<<endl;
@@ -495,21 +497,21 @@ int main()
     for(it = Quadrant1.begin(); it != Quadrant1.end(); it++)
     {
       cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
-      print_segment(it->source(), it->target());
+      //print_segment(it->source(), it->target());
     }
     // print the quad-2 segments
     cerr<<"Quadrant-2"<<endl;
     for(it = Quadrant2.begin(); it != Quadrant2.end(); it++)
     {
       cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
-      print_segment(it->source(), it->target());
+      //print_segment(it->source(), it->target());
     }
     // print the quad-3 segments
     cerr<<"Quadrant-3"<<endl;
     for(it = Quadrant3.begin(); it != Quadrant3.end(); it++)
     {
       cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
-      print_segment(it->source(), it->target());
+      //print_segment(it->source(), it->target());
 
     }
     // print the quad-4 segments
@@ -517,7 +519,7 @@ int main()
     for(it = Quadrant4.begin(); it != Quadrant4.end(); it++)
     {
       cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
-      print_segment(it->source(), it->target());
+      //print_segment(it->source(), it->target());
     }
 
     /// Determining the Envelope
@@ -709,41 +711,100 @@ int main()
       if(Envelope4.empty()) Envelope4.push_back(Point_2(lw,ln));
 
 
-
       // circular queue implementation
     {
-      list<Ray_2> FarthestHull;
+      list<HullSegment> FarthestHull;
       list<Point_2>::iterator it;
-      Point_2 prev;
       for(it=Envelope1.begin();it!=Envelope1.end();it++)
       {
         Point_2 curr_point = *it;
-        FarthestHull.push_back(Ray_2(curr_point,Direction_2(Vector_2(-1,-1))));
+        HullSegment h1;
+        h1.b = Ray_2(curr_point, Direction_2(Vector_2(1,-1)));
+        if(it == Envelope1.begin())
+        {
+          h1.e1 = Segment_2(*Envelope4.begin(), curr_point);
+        }else{
+          h1.e1 = Segment_2(*(std::prev(it)),*it);
+        }
+        if(*it == *Envelope1.rbegin())
+        {
+          h1.e2 = Segment_2(curr_point, *Envelope2.begin());
+        }
+        else{
+          h1.e2 = Segment_2(*it,*(std::next(it)));
+        }
+        FarthestHull.push_back(h1);
       }
       // push envelope 2
       for(it=Envelope2.begin();it!=Envelope2.end();it++)
       {
         Point_2 curr_point = *it;
-        FarthestHull.push_back(Ray_2(curr_point,Direction_2(Vector_2(1,-1))));
+        HullSegment h1;
+        h1.b = Ray_2(curr_point, Direction_2(Vector_2(-1,-1)));
+        if(it == Envelope2.begin())
+        {
+          h1.e1 = Segment_2(*Envelope1.begin(), curr_point);
+        }else{
+          h1.e1 = Segment_2(*(std::prev(it)),*it);
+        }
+        if(*it == *Envelope2.rbegin())
+        {
+          h1.e2 = Segment_2(curr_point, *Envelope3.rbegin());
+        }
+        else{
+          h1.e2 = Segment_2(*it,*(std::next(it)));
+        }
+        FarthestHull.push_back(h1);
       }
 
       // push envelope 3
+      reverse(Envelope3.begin(), Envelope3.end());
       for(it=Envelope3.begin();it!=Envelope3.end();it++)
       {
         Point_2 curr_point = *it;
-        FarthestHull.push_back(Ray_2(curr_point,Direction_2(Vector_2(1,1))));
+        HullSegment h1;
+        h1.b = Ray_2(curr_point, Direction_2(Vector_2(1,1)));
+        if(it == Envelope3.begin())
+        {
+          h1.e1 = Segment_2(*Envelope2.rbegin(), curr_point);
+        }else{
+          h1.e1 = Segment_2(*(std::prev(it)),*it);
+        }
+        if(*it == *Envelope3.rbegin())
+        {
+          h1.e2 = Segment_2(curr_point, *Envelope4.rbegin());
+        }
+        else{
+          h1.e2 = Segment_2(*it,*(std::next(it)));
+        }
+        FarthestHull.push_back(h1);
       }
 
 
       // push envelope 4
+      reverse(Envelope4.begin(), Envelope4.end());
       for(it=Envelope4.begin();it!=Envelope4.end();it++)
       {
         Point_2 curr_point = *it;
-        FarthestHull.push_back(Ray_2(curr_point,Direction_2(Vector_2(-1,1))));
+        HullSegment h1;
+        h1.b = Ray_2(curr_point, Direction_2(Vector_2(-1,1)));
+        if(it == Envelope4.begin())
+        {
+          h1.e1 = Segment_2(*Envelope3.rbegin(), curr_point);
+        }else{
+          h1.e1 = Segment_2(*(std::prev(it)),*it);
+        }
+        if(*it == *Envelope4.rbegin())
+        {
+          h1.e2 = Segment_2(curr_point, *Envelope1.begin());
+        }
+        else{
+          h1.e2 = Segment_2(*it,*(std::next(it)));
+        }
+        FarthestHull.push_back(h1);
       }
       
-      list<Ray_2>::iterator it1;
-      list<Ray_2>::iterator prev1 = FarthestHull.begin();
+      list<HullSegment>::iterator it1;
       cerr<<"The farthest Hull is"<<endl;
 
       print_line(Line_2(0,1,-ln));
@@ -751,58 +812,61 @@ int main()
       print_line(Line_2(1,0,-lw));
       print_line(Line_2(1,0,-le));
 
-      if(Envelope1.size()>1){
-      Point_2 prev_point = *Envelope1.begin();
-      for(it=Envelope1.begin();it!=Envelope1.end();it++)
-      {
-        Point_2 curr_point = *it;
-        print_segment(prev_point, curr_point);
-        prev_point = curr_point;
-      }
-      }
+      // if(Envelope1.size()>1){
+      // Point_2 prev_point = *Envelope1.begin();
+      // for(it=Envelope1.begin();it!=Envelope1.end();it++)
+      // {
+      //   Point_2 curr_point = *it;
+      //   print_segment(prev_point, curr_point);
+      //   prev_point = curr_point;
+      // }
+      // }
 
-      if(Envelope2.size()>1){
-      Point_2 prev_point = *Envelope2.begin();
-      for(it=Envelope2.begin();it!=Envelope2.end();it++)
-      {
-        Point_2 curr_point = *it;
-        print_segment(prev_point, curr_point);
-        prev_point = curr_point;
-      }
-      }
-
-
-
-      if(Envelope3.size()>1){
-      Point_2 prev_point = *Envelope3.begin();
-      for(it=Envelope3.begin();it!=Envelope3.end();it++)
-      {
-        Point_2 curr_point = *it;
-        print_segment(prev_point, curr_point);
-        prev_point = curr_point;
-      }
-      }
+      // if(Envelope2.size()>1){
+      // Point_2 prev_point = *Envelope2.begin();
+      // for(it=Envelope2.begin();it!=Envelope2.end();it++)
+      // {
+      //   Point_2 curr_point = *it;
+      //   print_segment(prev_point, curr_point);
+      //   prev_point = curr_point;
+      // }
+      // }
 
 
-      if(Envelope4.size()>1){
-      Point_2 prev_point = *Envelope4.begin();
-      for(it=Envelope4.begin();it!=Envelope4.end();it++)
-      {
-        Point_2 curr_point = *it;
-        print_segment(prev_point, curr_point);
-        prev_point = curr_point;
-      }
-      }
+
+      // if(Envelope3.size()>1){
+      // Point_2 prev_point = *Envelope3.begin();
+      // for(it=Envelope3.begin();it!=Envelope3.end();it++)
+      // {
+      //   Point_2 curr_point = *it;
+      //   print_segment(prev_point, curr_point);
+      //   prev_point = curr_point;
+      // }
+      // }
+
+
+      // if(Envelope4.size()>1){
+      // Point_2 prev_point = *Envelope4.begin();
+      // for(it=Envelope4.begin();it!=Envelope4.end();it++)
+      // {
+      //   Point_2 curr_point = *it;
+      //   print_segment(prev_point, curr_point);
+      //   prev_point = curr_point;
+      // }
+      // }
 
       
       for(it1 = FarthestHull.begin(); it1 != FarthestHull.end(); it1 ++)
       {
-        print_point(it1->source());
-        //print_ray(it1->source(), it1->direction());
-        prev1 = it1;
+        print_point(it1->b.source());
+        print_segment(it1->e1.source(), it1->e1.target());
+        print_segment(it1->e2.source(), it1->e2.target());
       }
-      deque<HullSegment> q;
       
+      
+      
+      
+      vector<HullSegment> circularList;
       
 
       
