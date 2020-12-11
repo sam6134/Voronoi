@@ -33,7 +33,10 @@ def add_ray(p, pt1, unit_vector):
 # plot line of form ax+by=c
 def add_line(p, a, b, c):
 
-    (x0, y0) = (c / a, 0)
+    if(a == 0):
+        (x0, y0) = (0,-c/b)
+    else:
+        (x0, y0) = (-c / a, 0)
     if b == 0:
         rad_angle = pi / 2
     else:

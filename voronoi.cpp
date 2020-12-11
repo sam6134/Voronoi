@@ -1,6 +1,8 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include<queue>
+#include<deque>
 
 #include <CGAL/intersections.h>
 // envelope
@@ -62,9 +64,21 @@ typedef Kernel::Line_2                                  Line_2;
 typedef Kernel::Segment_2                               Segment_2;
 typedef Kernel::Intersect_2                             Intersect_2;
 typedef Kernel::Line_2                                  Line_2;
+typedef Kernel::Ray_2                                   Ray_2;
+typedef Kernel::Direction_2                             Direction_2;
+typedef Kernel::Vector_2                                Vector_2;
 
 list<Point_2> pt_list;
 list<VD_Point_2>  vd_pt_list;
+
+struct HullSegment
+{
+  Segment_2 e1;
+  Point_2 curr;
+  Ray_2 b;
+  Segment_2 next;
+};
+
 
 void print_error_message(string s)
 {
@@ -130,6 +144,26 @@ bool intersectsRegion(Segment_2* s, double y, double x, int a, Segment_2* sMod)
 {
 
     // find intx points with both the lines
+    if(a == 1 || a == 3)
+    {
+      if((s->source().y() - s->target().y())/(s->source().x() - s->target().x())> 0) return false;
+    }
+    if(a == 2 || a == 4)
+    {
+      if((s->source().y() - s->target().y())/(s->source().x() - s->target().x())< 0) return false;
+    }
+    if(a == 1 || a == 2)
+    {
+      Line_2 lcheck = Line_2(*s);
+      if(((lcheck.a()*x + lcheck.b()*y + lcheck.c())/lcheck.b()) > 0) return false;
+    }
+
+    if(a == 3 || a == 4)
+    {
+      Line_2 lcheck = Line_2(*s);
+      if(((lcheck.a()*x + lcheck.b()*y + lcheck.c())/lcheck.b()) < 0) return false;
+    }
+
     Line_2 lin(0,1,-y);
     CGAL::cpp11::result_of<Intersect_2(Segment_2, Line_2)>::type
     result1 = CGAL::intersection(*s, lin);
@@ -192,7 +226,7 @@ bool isInRegion(Segment_2* s, double y, double x, int a)
 
 int main()
 {
-  Point_2 points[6] = { Point_2(0,0), Point_2(10,4), Point_2(10,10), Point_2(6,5), Point_2(4,1), Point_2(3,7) };
+  Point_2 points[6] = { Point_2(9,4), Point_2(10,5), Point_2(7,7), Point_2(4,6), Point_2(2,1), Point_2(9,7) };
   
 
 
@@ -205,9 +239,9 @@ int main()
   pt_list.push_back(points[4]);
   pt_list.push_back(points[5]);
 
-  for( auto x: pt_list){
-    print_point(x);
-  }
+  //for( auto x: pt_list){
+    //print_point(x);
+  //}
 
   int Option;
   cerr<<"DEBUG: Select a Option"<<endl;
@@ -532,12 +566,13 @@ int main()
         cerr << std::endl;
         v = e->right();
         cerr << "Vertex (" << v->point() << "):";
+        Envelope1.push_back(v->point());
         for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
           cerr << ' ' << cit->data();
         cerr << std::endl;
         e = v->right();
       }
-
+      if(Envelope1.empty()) Envelope1.push_back(Point_2(lw,ls));
 
 
       // quad 2
@@ -576,12 +611,13 @@ int main()
         cerr << std::endl;
         v = e->right();
         cerr << "Vertex (" << v->point() << "):";
+        Envelope2.push_back(v->point());
         for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
           cerr << ' ' << cit->data();
         cerr << std::endl;
         e = v->right();
       }
-
+      if(Envelope2.empty()) Envelope2.push_back(Point_2(le,ls));
 
       // quad 3
       montone_list.clear();
@@ -618,12 +654,13 @@ int main()
         cerr << std::endl;
         v = e->right();
         cerr << "Vertex (" << v->point() << "):";
+        Envelope3.push_back(v->point());
         for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
           cerr << ' ' << cit->data();
         cerr << std::endl;
         e = v->right();
       }
-
+      if(Envelope3.empty()) Envelope3.push_back(Point_2(le,ln));
 
 
 
@@ -663,13 +700,122 @@ int main()
         cerr << std::endl;
         v = e->right();
         cerr << "Vertex (" << v->point() << "):";
+        Envelope4.push_back(v->point());
         for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
           cerr << ' ' << cit->data();
         cerr << std::endl;
         e = v->right();
       }
+      if(Envelope4.empty()) Envelope4.push_back(Point_2(lw,ln));
+
+
+
+      // circular queue implementation
+    {
+      list<Ray_2> FarthestHull;
+      list<Point_2>::iterator it;
+      Point_2 prev;
+      for(it=Envelope1.begin();it!=Envelope1.end();it++)
+      {
+        Point_2 curr_point = *it;
+        FarthestHull.push_back(Ray_2(curr_point,Direction_2(Vector_2(-1,-1))));
+      }
+      // push envelope 2
+      for(it=Envelope2.begin();it!=Envelope2.end();it++)
+      {
+        Point_2 curr_point = *it;
+        FarthestHull.push_back(Ray_2(curr_point,Direction_2(Vector_2(1,-1))));
+      }
+
+      // push envelope 3
+      for(it=Envelope3.begin();it!=Envelope3.end();it++)
+      {
+        Point_2 curr_point = *it;
+        FarthestHull.push_back(Ray_2(curr_point,Direction_2(Vector_2(1,1))));
+      }
+
+
+      // push envelope 4
+      for(it=Envelope4.begin();it!=Envelope4.end();it++)
+      {
+        Point_2 curr_point = *it;
+        FarthestHull.push_back(Ray_2(curr_point,Direction_2(Vector_2(-1,1))));
+      }
+      
+      list<Ray_2>::iterator it1;
+      list<Ray_2>::iterator prev1 = FarthestHull.begin();
+      cerr<<"The farthest Hull is"<<endl;
+
+      print_line(Line_2(0,1,-ln));
+      print_line(Line_2(0,1,-ls));
+      print_line(Line_2(1,0,-lw));
+      print_line(Line_2(1,0,-le));
+
+      if(Envelope1.size()>1){
+      Point_2 prev_point = *Envelope1.begin();
+      for(it=Envelope1.begin();it!=Envelope1.end();it++)
+      {
+        Point_2 curr_point = *it;
+        print_segment(prev_point, curr_point);
+        prev_point = curr_point;
+      }
+      }
+
+      if(Envelope2.size()>1){
+      Point_2 prev_point = *Envelope2.begin();
+      for(it=Envelope2.begin();it!=Envelope2.end();it++)
+      {
+        Point_2 curr_point = *it;
+        print_segment(prev_point, curr_point);
+        prev_point = curr_point;
+      }
+      }
+
+
+
+      if(Envelope3.size()>1){
+      Point_2 prev_point = *Envelope3.begin();
+      for(it=Envelope3.begin();it!=Envelope3.end();it++)
+      {
+        Point_2 curr_point = *it;
+        print_segment(prev_point, curr_point);
+        prev_point = curr_point;
+      }
+      }
+
+
+      if(Envelope4.size()>1){
+      Point_2 prev_point = *Envelope4.begin();
+      for(it=Envelope4.begin();it!=Envelope4.end();it++)
+      {
+        Point_2 curr_point = *it;
+        print_segment(prev_point, curr_point);
+        prev_point = curr_point;
+      }
+      }
+
+      
+      for(it1 = FarthestHull.begin(); it1 != FarthestHull.end(); it1 ++)
+      {
+        print_point(it1->source());
+        //print_ray(it1->source(), it1->direction());
+        prev1 = it1;
+      }
+      deque<HullSegment> q;
+      
+      
+
+      
 
     }
+
+    }
+
+
+
+
+
+    
     
   }
 
