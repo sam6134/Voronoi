@@ -77,6 +77,187 @@ struct HullSegment
   Segment_2 e2;
 };
 
+double L,R,D,U;
+Point_2 Rgn;
+
+struct FVDvertex
+{
+  Ray_2 b1;
+  Point_2 p1;
+  Ray_2 b2;
+};
+
+bool operator==(const FVDvertex& lhs, const FVDvertex& rhs)
+{
+    if(lhs.b1 == rhs.b1 && lhs.b2 == rhs.b2 && lhs.p1 == rhs.p1) return true;
+    else return false;
+}
+
+bool operator==(const HullSegment& lhs, const HullSegment& rhs)
+{
+    if(lhs.e1 == rhs.e1 && lhs.e2 == rhs.e2 && lhs.b == rhs.b) return true;
+    else return false;
+}
+
+vector<FVDvertex> removefromFVD(vector<FVDvertex> vi, FVDvertex vmax){
+  vector<FVDvertex>::iterator it;
+  for(it = vi.begin(); it!= vi.end(); it++)
+  {
+    if( *it == vmax)
+    {
+      vi.erase(it);
+      return vi;
+    }
+  }
+}
+vector<HullSegment> removefromCircularList(vector<HullSegment> vi, HullSegment toBeRemoved)
+{
+  vector<HullSegment>::iterator it;
+  for(it = vi.begin(); it!= vi.end(); it++)
+  {
+    if( *it == toBeRemoved)
+    {
+      vi.erase(it);
+      return vi;
+    }
+  }
+}
+bool isIntersecting(HullSegment h1, HullSegment h2, Point_2* v)
+{
+  CGAL::cpp11::result_of<Intersect_2(Ray_2, Ray_2)>::type
+      result1 = CGAL::intersection(h1.b, h2.b);
+  if(result1)
+  {
+    const Point_2 *p1 = boost::get<Point_2>(&*result1);
+    *v = *p1;
+    return true;
+  }
+  return false;
+}
+
+double WeightOfPoint(Point_2 p1)
+{
+  return max(max( abs(p1.x()-L),abs(p1.x()-R) ), max( abs(p1.y()-U),abs(p1.y()-D) ));
+}
+
+FVDvertex findMaxWt(vector<FVDvertex> FVDset)
+{
+  FVDvertex vmax = FVDset[0];
+  for(int i=1;i<FVDset.size();i++)
+  {
+    if(WeightOfPoint(vmax.p1)<WeightOfPoint(FVDset[i].p1))
+    {
+      vmax = FVDset[i];
+    }
+  }
+  return vmax;
+}
+
+int findBisector(vector<HullSegment> circularList, FVDvertex v)
+{
+  int n = circularList.size();
+  for(int i=0;i<n;i++)
+  {
+    if(circularList[i].b == v.b1 && circularList[(i+1)%n].b == v.b2)
+    {
+      return i;
+    }
+  }
+  return -1;
+}
+
+pair<double,double> findslopes(Segment_2 e1, Segment_2 e2, Point_2 &intx)
+{
+  double dy1 = e1.direction().dy();
+  double dx1 = e1.direction().dx();
+  double dy2 = e2.direction().dy();
+  double dx2 = e2.direction().dx();
+
+  if(dy1 == 0 and dy2 == 0)
+  {
+    intx = Point_2((e1.source().x()+e2.source().x())/2, (e1.source().y()+e2.source().y())/2);
+    return make_pair(0,0);
+  }
+  if(dx1 == 0 and dy1/dx1 > 0)
+  {
+    CGAL::cpp11::result_of<Intersect_2(Line_2, Line_2)>::type
+      result1 = CGAL::intersection(Line_2(e1), Line_2(e2));
+    const Point_2 *p1 = boost::get<Point_2>(&*result1);
+    intx = *p1;
+    return make_pair(1,(1+2*(dy1/dx1)));
+  }
+  if(dx1 == 0 and dy1/dx1 < 0)
+  {
+    CGAL::cpp11::result_of<Intersect_2(Line_2, Line_2)>::type
+      result1 = CGAL::intersection(Line_2(e1), Line_2(e2));
+    const Point_2 *p1 = boost::get<Point_2>(&*result1);
+    intx = *p1;
+    return make_pair(1,(-1+2*(dy1/dx1)));
+  }
+  if(dy1/dx1>=0 and dy2/dx2>=0)
+  {
+    double b1 = min(dy1/dx1, dy2/dx2);
+    double b2 = max(dy1/dx1, dy2/dx2);
+    CGAL::cpp11::result_of<Intersect_2(Line_2, Line_2)>::type
+      result1 = CGAL::intersection(Line_2(e1), Line_2(e2));
+    const Point_2 *p1 = boost::get<Point_2>(&*result1);
+    intx = *p1;
+    return make_pair(-1, ((b1+b2+2*b1*b2)/(b1 + b2 + 2)));
+  }
+  if(dy1/dx1<0 and dy2/dx2<0)
+  {
+    double b1 = max(dy1/dx1, dy2/dx2);
+    double b2 = min(dy1/dx1, dy2/dx2);
+    CGAL::cpp11::result_of<Intersect_2(Line_2, Line_2)>::type
+      result1 = CGAL::intersection(Line_2(e1), Line_2(e2));
+    const Point_2 *p1 = boost::get<Point_2>(&*result1);
+    intx = *p1;
+    return make_pair(1, ((-b1-b2+2*b1*b2)/(b1 + b2 - 2)));
+  }
+  if(dy1/dx1>0 and dy2/dx2<0)
+  {
+    double b1 = max(dy1/dx1, dy2/dx2);
+    double b2 = min(dy1/dx1, dy2/dx2);
+    CGAL::cpp11::result_of<Intersect_2(Line_2, Line_2)>::type
+      result1 = CGAL::intersection(Line_2(e1), Line_2(e2));
+    const Point_2 *p1 = boost::get<Point_2>(&*result1);
+    intx = *p1;
+    return make_pair( (b2-b1+2*b1*b2)/(b1+b2),(b1+b2)/(b1-b2+2) );
+  }
+}
+
+Line_2 LinfBisector(Segment_2 e1, Segment_2 e2)
+{
+  Point_2 intx;
+  if(e1.direction().dx() == 0 && e2.direction().dx() == 0)
+  {
+    return Line_2(1,0,-(e1.source().x() + e2.source().x())/2);
+  }
+  pair<double,double> slopes = findslopes(e1,e2, intx);
+  Line_2 bisector1 = Line_2(intx, Vector_2(1,slopes.first));
+  Line_2 bisector2 = Line_2(intx, Vector_2(1,slopes.second));
+
+  double ycheck1 = bisector1.y_at_x(intx.x()+1);
+  Point_2 pcheck1 = Point_2(intx.x()+1,ycheck1);
+
+  double ycheck2 = bisector1.y_at_x(intx.x()-1);
+  Point_2 pcheck2 = Point_2(intx.x()-1,ycheck1);
+
+  Line_2 l1 = Line_2(e1);
+  double sign1 = (l1.a()*pcheck1.x() + l1.b()*pcheck1.y() + l1.c())*(l1.a()*Rgn.x() + l1.b()*Rgn.y() + l1.c());
+  Line_2 l2 = Line_2(e2);
+  double sign2 = (l2.a()*pcheck1.x() + l2.b()*pcheck1.y() + l2.c())*(l2.a()*Rgn.x() + l2.b()*Rgn.y() + l2.c());
+
+  if(sign1>=0 && sign2>=0) return bisector1;
+
+  sign1 = (l1.a()*pcheck2.x() + l1.b()*pcheck2.y() + l1.c())*(l1.a()*Rgn.x() + l1.b()*Rgn.y() + l1.c());
+  sign2 = (l2.a()*pcheck2.x() + l2.b()*pcheck2.y() + l2.c())*(l2.a()*Rgn.x() + l2.b()*Rgn.y() + l2.c());
+
+  if(sign1>=0 && sign2>=0) return bisector1;
+
+  return bisector2;  
+}
+
 bool PointComp(Point_2 a, Point_2 b)
 {
   return a.x() > b.x();
@@ -486,10 +667,22 @@ void option4(list<Point_2> &pt_list)
   }
   cerr << "The given segments are " << endl;
   list<Segment_2>::iterator it;
+  L = min(seg_list.begin()->source().x(), seg_list.begin()->target().x());
+  R = max(seg_list.begin()->source().x(), seg_list.begin()->target().x());
+  D = min(seg_list.begin()->source().y(), seg_list.begin()->target().y());
+  U = max(seg_list.begin()->source().y(), seg_list.begin()->target().y());
+
+  for (it = seg_list.begin(); it != seg_list.end(); it++)
+  {
+    L = min(L,min(it->source().x(), it->target().x()));
+    R = max(R,max(it->source().x(), it->target().x()));
+    D = min(D,min(it->source().y(), it->target().y()));
+    U = max(U,max(it->source().y(), it->target().y()));
+  }
   for (it = seg_list.begin(); it != seg_list.end(); it++)
   {
     cerr << "Segment with end points " << it->source() << " , " << it->target() << endl;
-    print_segment(it->source(), it->target());
+    //print_segment(it->source(), it->target());
   }
   // Find Region R
 
@@ -508,6 +701,7 @@ void option4(list<Point_2> &pt_list)
     le = min(le, max(it->source().x(), it->target().x()));
     lw = max(lw, min(it->source().x(), it->target().x()));
   }
+  Rgn = Point_2((ln+ls)/2, (lw+le)/2);
   cerr << endl;
   cerr << "The Region R is " << endl;
   cerr << "ls = " << ls << " ln= " << ln << endl;
@@ -592,7 +786,7 @@ void option4(list<Point_2> &pt_list)
       {
         Point_2 curr_point = *it;
         HullSegment h1;
-        h1.b = Ray_2(curr_point, Direction_2(Vector_2(1, -1)));
+        h1.b = Ray_2(curr_point, Direction_2(Vector_2(-1, -1)));
         if (it == Envelope1.begin())
         {
           h1.e1 = Segment_2(*Envelope4.begin(), curr_point);
@@ -616,7 +810,7 @@ void option4(list<Point_2> &pt_list)
       {
         Point_2 curr_point = *it;
         HullSegment h1;
-        h1.b = Ray_2(curr_point, Direction_2(Vector_2(-1, -1)));
+        h1.b = Ray_2(curr_point, Direction_2(Vector_2(1, -1)));
         if (it == Envelope2.begin())
         {
           h1.e1 = Segment_2(*Envelope1.begin(), curr_point);
@@ -738,13 +932,134 @@ void option4(list<Point_2> &pt_list)
 
       for (it1 = FarthestHull.begin(); it1 != FarthestHull.end(); it1++)
       {
-        print_point(it1->b.source());
+        print_ray(it1->b.source(),it1->b.direction());
         print_segment(it1->e1.source(), it1->e1.target());
         print_segment(it1->e2.source(), it1->e2.target());
       }
 
       vector<HullSegment> circularList;
+      for(it1 = FarthestHull.begin(); it1 != FarthestHull.end(); it1++)
+      {
+        circularList.push_back(*it1);
+      }
+      cerr<<"circular list created"<<endl;
+      vector<FVDvertex> FVDSet;
+      int n = circularList.size();
+      for(int i=0;i<n;i++)
+      {
+        cerr<<circularList[i].b<<endl;
+      }
+      for(int i=0;i<n;i++)
+      {
+        Point_2 v;
+        if(isIntersecting(circularList[i], circularList[(i+1)%n], &v))
+        {
+          cerr<<v<<endl;
+          FVDvertex FVDv1;
+          FVDv1.b1 = circularList[i].b;
+          FVDv1.p1 = v;
+          FVDv1.b2 = circularList[(i+1)%n].b;
+          FVDSet.push_back(FVDv1);
+        }
+      }
+      cerr<<"vertex set constructed of size:"<<FVDSet.size()<<endl;
+      vector<Point_2> VoronoiDiagram;
+
+      while(circularList.size() > 2 && FVDSet.size()>0)
+      {
+        FVDvertex vmax = findMaxWt(FVDSet);
+        cerr<<"Found point:"<<vmax.p1<<" with max wt. from FVDset"<<endl;
+        FVDSet = removefromFVD(FVDSet, vmax);
+        cerr<<"removed point:"<<vmax.p1<<"from FVDset"<<endl;
+        cerr<<"size of FVDset is:"<<FVDSet.size()<<endl;
+        int idx = findBisector(circularList,vmax);
+        if(idx == -1) continue;
+        VoronoiDiagram.push_back(vmax.p1);
+        HullSegment toBeRemoved1, toBeRemoved2;
+        toBeRemoved1 = circularList[idx];
+        toBeRemoved2 = circularList[(idx+1)%n];
+        cerr<<"picked up "<<toBeRemoved1.b<<" and "<<toBeRemoved2.b<<endl;
+        HullSegment h1;
+        h1.e1 = circularList[idx].e1;
+        h1.e2 = circularList[(idx+1)%n].e2;
+        cerr<<"Calculating Linf bisector for "<<circularList[idx].e1<<" and "<<circularList[(idx+1)%n].e2<<endl;
+        Line_2 unboundedBisector = LinfBisector(circularList[idx].e1, circularList[(idx+1)%n].e2);
+        cerr<<"Linf bisector for above edges found"<<endl;
+
+      CGAL::cpp11::result_of<Intersect_2(Line_2, Ray_2)>::type
+      result1 = CGAL::intersection(unboundedBisector, circularList[(idx-1+n)%n].b);
+      CGAL::cpp11::result_of<Intersect_2(Line_2, Ray_2)>::type
+      result2 = CGAL::intersection(unboundedBisector, circularList[(idx+2)%n].b);
+      if(result1 && result2)
+      {
+        cerr<<"intersected with both"<<endl;
+        const Point_2 *firstIntx = boost::get<Point_2>(&*result1);
+        cerr<<"calculated intx with first"<<endl;
+
+        const Point_2 *secondIntx = boost::get<Point_2>(&*result1);
+        cerr<<"calculated intx with second"<<endl;
+        if(WeightOfPoint(*firstIntx)>WeightOfPoint(*secondIntx))
+        {
+          h1.b = Ray_2(*firstIntx,unboundedBisector);
+          FVDvertex v1;
+          v1.b1 = circularList[(idx-1+n)%n].b;
+          v1.b2 = h1.b;
+          v1.p1 = *firstIntx;
+          FVDSet.push_back(v1);
+          cerr<<"first was greater pushing in set"<<endl;
+        }else{
+          h1.b = Ray_2(*secondIntx,unboundedBisector);
+          FVDvertex v1;
+          v1.b1 = h1.b;
+          v1.b2 = circularList[(idx+2)%n].b;
+          v1.p1 = *secondIntx;
+          FVDSet.push_back(v1);
+          cerr<<"second was greater pushing in set"<<endl;
+        }
+      }
+      else if(result1)
+      {
+          const Point_2 *firstIntx = boost::get<Point_2>(&*result1);
+          h1.b = Ray_2(*firstIntx,unboundedBisector);
+          FVDvertex v1;
+          v1.b1 = circularList[(idx-1+n)%n].b;
+          v1.b2 = h1.b;
+          v1.p1 = *firstIntx;
+          FVDSet.push_back(v1);
+          cerr<<"first was only present"<<endl;
+      }
+      else if(result2)
+      {
+          const Point_2 *secondIntx = boost::get<Point_2>(&*result1);
+          h1.b = Ray_2(*secondIntx,unboundedBisector);
+          FVDvertex v1;
+          v1.b1 = h1.b;
+          v1.b2 = circularList[(idx+2)%n].b;
+          v1.p1 = *secondIntx;
+          FVDSet.push_back(v1);
+          cerr<<"second was only present"<<endl;
+      }
+      else{
+        cerr<<"no intersection"<<endl;
+        continue;
+      }
+      
+
+      circularList.insert(circularList.begin()+idx,h1);
+      circularList= removefromCircularList(circularList, toBeRemoved1);
+      circularList= removefromCircularList(circularList, toBeRemoved2);
+      cerr<<"Removed both bisectors from the set"<<endl;
+      cerr<<"size of circularList is:"<<circularList.size()<<endl;
+      n--;
+      }
+
+    vector<Point_2>::iterator it2;
+    for(it2= VoronoiDiagram.begin(); it2 != VoronoiDiagram.end(); it2++)
+    {
+      print_point(*it2);
+    } 
     }
+
   }
 }
 

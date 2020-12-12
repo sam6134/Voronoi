@@ -6,7 +6,7 @@ from numpy import arctan
 
 
 def add_point(p, x, y):
-    p.scatter([x], [y], marker="circle", size=7, fill_color="red")
+    p.circle([x], [y], size=7, fill_color="red")
 
 
 def add_line_segment(p, pt1, pt2):
@@ -78,6 +78,6 @@ for s in shapes:
     if s[0] == "P":
         temp = s.split()
         x, y = temp[1:3]
-        add_point(p, x, y)
+        add_point(p, float(x), float(y))
 
 show(p)
