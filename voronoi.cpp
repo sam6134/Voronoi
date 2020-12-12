@@ -226,6 +226,60 @@ bool isInRegion(Segment_2* s, double y, double x, int a)
  return false;
 }
 
+
+namespace envelope
+{
+    typedef CGAL::Cartesian<double> Kernel;
+    typedef Kernel::Point_2 Point_2;
+    typedef Kernel::Segment_2 Segment_2;
+    typedef CGAL::Arr_segment_traits_2<Kernel> Segment_traits_2;
+    typedef Segment_traits_2::Curve_2 Curve_2;
+    typedef CGAL::Envelope_diagram_1<Segment_traits_2> Diagram_1;
+
+    Diagram_1::Edge_const_handle e;
+    Diagram_1::Vertex_const_handle v;
+
+    // If envl_type := True Find upper envelope
+    // If envl_type := False Find lower envelope
+    void find_envelope(list<Segment_2> &Quadrant, int id, bool envl_type, list<Point_2> &envelope)
+    {
+        std::list<Curve_2> segment_list;
+        Diagram_1 min_diag;
+
+        for (auto it = Quadrant.begin(); it != Quadrant.end(); it++)
+        {
+            if (it->source() == it->target())
+            {
+                envelope.push_back(it->source());
+                continue;
+            }
+            segment_list.push_back(Curve_2(it->source(),it->target()));
+        }
+        // COMPUTING THE RESPECTIVE ENVELOPE
+        if (envl_type)
+        {
+            upper_envelope_x_monotone_2(segment_list.begin(), segment_list.end(), min_diag);
+            cerr << "COMPUTED UPPER ENVELOPE " << id << endl;
+        }
+        else
+        {
+            lower_envelope_x_monotone_2(segment_list.begin(), segment_list.end(), min_diag);
+            cerr << "COMPUTED LOWER ENVELOPE " << id << endl;
+        }
+        e = min_diag.leftmost();
+        // OUTPUTING THE ENVELOPE POINTS
+        while (e != min_diag.rightmost())
+        {
+            v = e->right();
+            auto pt = v->point();
+            envelope.push_back(pt);
+            e = v->right();
+        }
+        min_diag.clear();
+        segment_list.clear();
+    }
+} // namespace envelope
+
 int main()
 {
   Point_2 points[6] = { Point_2(9,4), Point_2(10,5), Point_2(7,7), Point_2(4,6), Point_2(2,1), Point_2(9,7) };
@@ -466,30 +520,18 @@ int main()
 
     for(it = seg_list.begin();it!=seg_list.end();it++)
     {
-
       // find segments straddling quadrant-1
       if(intersectsRegion(&(*it),ls,lw,1,sMod))
-      {
         Quadrant1.push_back(*sMod);
-      }
-
       // find segments straddling quadrant-2
       if(intersectsRegion(&(*it),ls,le,2,sMod))
-      {
         Quadrant2.push_back(*sMod);
-      }
-
       // find segments straddling quadrant-3
       if(intersectsRegion(&(*it),ln,le,3,sMod))
-      {
         Quadrant3.push_back(*sMod);
-      }
-
       // find segments straddling quadrant-4
       if(intersectsRegion(&(*it),ln,lw,4,sMod))
-      {
         Quadrant4.push_back(*sMod);
-      }
     }
 
     // print the quad-1 segments
@@ -512,7 +554,6 @@ int main()
     {
       cerr<<"Segment with end points "<< it->source() << " , "<<it->target()<<endl;
       //print_segment(it->source(), it->target());
-
     }
     // print the quad-4 segments
     cerr<<"Quadrant-4"<<endl;
@@ -522,195 +563,20 @@ int main()
       //print_segment(it->source(), it->target());
     }
 
-    /// Determining the Envelope
+    /// Determining the Envelopes
     {
-    typedef CGAL::Cartesian<double>                         Kernel;
-    typedef CGAL::Arr_segment_traits_2<Kernel>              Segment_traits_2;
-    typedef Segment_traits_2::X_monotone_curve_2            Segment_2_monotone;
-    typedef CGAL::Arr_curve_data_traits_2<Segment_traits_2,
-                                          char>             Traits_2;
-    typedef Traits_2::Point_2                               Point_2_monotone;
-    typedef Traits_2::X_monotone_curve_2                    Labeled_segment_2;
-    typedef CGAL::Envelope_diagram_1<Traits_2>              Diagram_1;
-
-      std::list<Labeled_segment_2>   montone_list;
-      char dummy = 'A';
-      list<Point_2> Envelope1;
-      for(it = Quadrant1.begin();it!=Quadrant1.end();it++)
-      {
-        if(it->source() == it->target()) 
-        {
-          Envelope1.push_back(it->source());
-          continue;
-        }
-        montone_list.push_back(Labeled_segment_2 (Segment_2_monotone \
-        (Point_2_monotone(it->source().x(), it->source().y()),Point_2_monotone(it->target().x(), it->target().y())),dummy));
-        dummy++;
-      }
-      Diagram_1 min_diag;
-      cerr<<"chk1"<<endl;
-      upper_envelope_x_monotone_2 (montone_list.begin(), montone_list.end(),
-                               min_diag);
-      cerr<<"upper env done"<<endl; 
-      Diagram_1::Edge_const_handle     e = min_diag.leftmost();
-      Diagram_1::Vertex_const_handle   v;
-      Diagram_1::Curve_const_iterator  cit;
-      while (e != min_diag.rightmost())
-      {
-        cerr << "Edge:";
-        if (! e->is_empty())
-        {
-          for (cit = e->curves_begin(); cit != e->curves_end(); ++cit)
-            cerr << ' ' << cit->data();
-        }
-        else
-          cerr << " [empty]";
-        cerr << std::endl;
-        v = e->right();
-        cerr << "Vertex (" << v->point() << "):";
-        Envelope1.push_back(v->point());
-        for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
-          cerr << ' ' << cit->data();
-        cerr << std::endl;
-        e = v->right();
-      }
+      list<Point_2> Envelope1,Envelope2, Envelope3, Envelope4;
+      envelope::find_envelope(Quadrant1,1, true,Envelope1);
+      envelope::find_envelope(Quadrant2,2, true,Envelope2);
+      envelope::find_envelope(Quadrant3,3,false,Envelope3);
+      envelope::find_envelope(Quadrant4,4,false,Envelope4);
+      
       if(Envelope1.empty()) Envelope1.push_back(Point_2(lw,ls));
-
-
-      // quad 2
-      montone_list.clear();
-      dummy = 'A';
-      list<Point_2> Envelope2;
-      for(it = Quadrant2.begin();it!=Quadrant2.end();it++)
-      {
-        if(it->source() == it->target()) 
-        {
-          Envelope2.push_back(it->source());
-          continue;
-        }
-        montone_list.push_back(Labeled_segment_2 (Segment_2_monotone \
-        (Point_2_monotone(it->source().x(), it->source().y()),Point_2_monotone(it->target().x(), it->target().y())),dummy));
-        dummy++;
-      }
-
-      Diagram_1 min_diag2;
-      cerr<<"chk1"<<endl;
-      upper_envelope_x_monotone_2 (montone_list.begin(), montone_list.end(),
-                               min_diag2);
-      cerr<<"upper env done"<<endl; 
-      e = min_diag2.leftmost();
-      
-      while (e != min_diag2.rightmost())
-      {
-        cerr << "Edge:";
-        if (! e->is_empty())
-        {
-          for (cit = e->curves_begin(); cit != e->curves_end(); ++cit)
-            cerr << ' ' << cit->data();
-        }
-        else
-          cerr << " [empty]";
-        cerr << std::endl;
-        v = e->right();
-        cerr << "Vertex (" << v->point() << "):";
-        Envelope2.push_back(v->point());
-        for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
-          cerr << ' ' << cit->data();
-        cerr << std::endl;
-        e = v->right();
-      }
       if(Envelope2.empty()) Envelope2.push_back(Point_2(le,ls));
-
-      // quad 3
-      montone_list.clear();
-      dummy = 'A';
-      list<Point_2> Envelope3;
-      for(it = Quadrant3.begin();it!=Quadrant3.end();it++)
-      {
-        if(it->source() == it->target()) 
-        {
-          Envelope3.push_back(it->source());
-          continue;
-        }
-        montone_list.push_back(Labeled_segment_2 (Segment_2_monotone \
-        (Point_2_monotone(it->source().x(), it->source().y()),Point_2_monotone(it->target().x(), it->target().y())),dummy));
-        dummy++;
-      }
-      Diagram_1 min_diag3;
-      cerr<<"chk1"<<endl;
-      lower_envelope_x_monotone_2 (montone_list.begin(), montone_list.end(),
-                               min_diag3);
-      cerr<<"upper env done"<<endl; 
-      e = min_diag3.leftmost();
-      
-      while (e != min_diag3.rightmost())
-      {
-        cerr << "Edge:";
-        if (! e->is_empty())
-        {
-          for (cit = e->curves_begin(); cit != e->curves_end(); ++cit)
-            cerr << ' ' << cit->data();
-        }
-        else
-          cerr << " [empty]";
-        cerr << std::endl;
-        v = e->right();
-        cerr << "Vertex (" << v->point() << "):";
-        Envelope3.push_back(v->point());
-        for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
-          cerr << ' ' << cit->data();
-        cerr << std::endl;
-        e = v->right();
-      }
       if(Envelope3.empty()) Envelope3.push_back(Point_2(le,ln));
-
-
-
-      // quad4
-      montone_list.clear();
-      dummy = 'A';
-      list<Point_2> Envelope4;
-      for(it = Quadrant4.begin();it!=Quadrant4.end();it++)
-      {
-        if(it->source() == it->target()) 
-        {
-          Envelope4.push_back(it->source());
-          continue;
-        }
-        montone_list.push_back(Labeled_segment_2 (Segment_2_monotone \
-        (Point_2_monotone(it->source().x(), it->source().y()),Point_2_monotone(it->target().x(), it->target().y())),dummy));
-        dummy++;
-      }
-      Diagram_1 min_diag4;
-      cerr<<"chk1"<<endl;
-      lower_envelope_x_monotone_2 (montone_list.begin(), montone_list.end(),
-                               min_diag4);
-      cerr<<"upper env done"<<endl; 
-      e = min_diag4.leftmost();
-      
-      
-      while (e != min_diag4.rightmost())
-      {
-        cerr << "Edge:";
-        if (! e->is_empty())
-        {
-          for (cit = e->curves_begin(); cit != e->curves_end(); ++cit)
-            cerr << ' ' << cit->data();
-        }
-        else
-          cerr << " [empty]";
-        cerr << std::endl;
-        v = e->right();
-        cerr << "Vertex (" << v->point() << "):";
-        Envelope4.push_back(v->point());
-        for (cit = v->curves_begin(); cit != v->curves_end(); ++cit)
-          cerr << ' ' << cit->data();
-        cerr << std::endl;
-        e = v->right();
-      }
       if(Envelope4.empty()) Envelope4.push_back(Point_2(lw,ln));
 
-
+// ====================================================================
       // circular queue implementation
     {
       list<HullSegment> FarthestHull;
@@ -779,7 +645,6 @@ int main()
         }
         FarthestHull.push_back(h1);
       }
-
 
       // push envelope 4
       reverse(Envelope4.begin(), Envelope4.end());
@@ -868,9 +733,6 @@ int main()
       
       vector<HullSegment> circularList;
       
-
-      
-
     }
 
     }
