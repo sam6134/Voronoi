@@ -69,7 +69,7 @@ typedef Kernel::Vector_2 Vector_2;
 
 list<Point_2> pt_list;
 list<VD_Point_2> vd_pt_list;
-Point_2 points[6] = {Point_2(9, 4), Point_2(10, 5), Point_2(7, 7), Point_2(4, 6), Point_2(2, 1), Point_2(9, 7)};
+Point_2 points[10] = {Point_2(9, 4), Point_2(10, 5), Point_2(7, 7), Point_2(4, 6), Point_2(2, 1), Point_2(9, 7), Point_2(5,8), Point_2(3,2), Point_2(2,10), Point_2(10,4)};
 struct HullSegment
 {
   Segment_2 e1;
@@ -542,6 +542,7 @@ void option2(list<Point_2> &pt_list)
   for (it = pt_list.begin(); it != pt_list.end(); ++it)
   {
     vd_pt_list.push_back(VD_Point_2(it->x(), it->y()));
+    print_point(*it);
   }
 
   if (vd_pt_list.empty())
@@ -602,6 +603,7 @@ void option3(list<Point_2> &pt_list)
   std::list<Point_2>::iterator it;
   for (it = pt_list.begin(); it != pt_list.end(); ++it)
   {
+    print_point(*it);
     vd_pt_list.push_back(VD_Point_2(it->x(), it->y()));
   }
 
@@ -661,7 +663,7 @@ void option4(list<Point_2> &pt_list)
 {
   list<Segment_2> seg_list;
   // test segments
-  for (int i = 0; i < 6; i += 2)
+  for (int i = 0; i < 10; i += 2)
   {
     seg_list.push_back(Segment_2(points[i], points[i + 1]));
   }
@@ -890,46 +892,6 @@ void option4(list<Point_2> &pt_list)
       print_line(Line_2(1, 0, -lw));
       print_line(Line_2(1, 0, -le));
 
-      // if(Envelope1.size()>1){
-      // Point_2 prev_point = *Envelope1.begin();
-      // for(it=Envelope1.begin();it!=Envelope1.end();it++)
-      // {
-      //   Point_2 curr_point = *it;
-      //   print_segment(prev_point, curr_point);
-      //   prev_point = curr_point;
-      // }
-      // }
-
-      // if(Envelope2.size()>1){
-      // Point_2 prev_point = *Envelope2.begin();
-      // for(it=Envelope2.begin();it!=Envelope2.end();it++)
-      // {
-      //   Point_2 curr_point = *it;
-      //   print_segment(prev_point, curr_point);
-      //   prev_point = curr_point;
-      // }
-      // }
-
-      // if(Envelope3.size()>1){
-      // Point_2 prev_point = *Envelope3.begin();
-      // for(it=Envelope3.begin();it!=Envelope3.end();it++)
-      // {
-      //   Point_2 curr_point = *it;
-      //   print_segment(prev_point, curr_point);
-      //   prev_point = curr_point;
-      // }
-      // }
-
-      // if(Envelope4.size()>1){
-      // Point_2 prev_point = *Envelope4.begin();
-      // for(it=Envelope4.begin();it!=Envelope4.end();it++)
-      // {
-      //   Point_2 curr_point = *it;
-      //   print_segment(prev_point, curr_point);
-      //   prev_point = curr_point;
-      // }
-      // }
-
       for (it1 = FarthestHull.begin(); it1 != FarthestHull.end(); it1++)
       {
         print_ray(it1->b.source(),it1->b.direction());
@@ -1006,6 +968,7 @@ void option4(list<Point_2> &pt_list)
           v1.b2 = h1.b;
           v1.p1 = *firstIntx;
           FVDSet.push_back(v1);
+          print_ray(h1.b.source(), h1.b.direction());
           cerr<<"first was greater pushing in set"<<endl;
         }else{
           h1.b = Ray_2(*secondIntx,unboundedBisector);
@@ -1014,6 +977,7 @@ void option4(list<Point_2> &pt_list)
           v1.b2 = circularList[(idx+2)%n].b;
           v1.p1 = *secondIntx;
           FVDSet.push_back(v1);
+          print_ray(h1.b.source(), h1.b.direction());
           cerr<<"second was greater pushing in set"<<endl;
         }
       }
@@ -1026,6 +990,7 @@ void option4(list<Point_2> &pt_list)
           v1.b2 = h1.b;
           v1.p1 = *firstIntx;
           FVDSet.push_back(v1);
+          print_ray(h1.b.source(), h1.b.direction());
           cerr<<"first was only present"<<endl;
       }
       else if(result2)
@@ -1037,6 +1002,7 @@ void option4(list<Point_2> &pt_list)
           v1.b2 = circularList[(idx+2)%n].b;
           v1.p1 = *secondIntx;
           FVDSet.push_back(v1);
+          print_ray(h1.b.source(), h1.b.direction());
           cerr<<"second was only present"<<endl;
       }
       else{
@@ -1074,7 +1040,7 @@ int main()
   pt_list.push_back(points[2]);
   pt_list.push_back(points[3]);
   pt_list.push_back(points[4]);
-  pt_list.push_back(points[5]);
+  //pt_list.push_back(points[5]);
 
   //for( auto x: pt_list){
   //print_point(x);

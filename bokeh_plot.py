@@ -48,7 +48,7 @@ def add_line(p, a, b, c):
 # if using in jupyter notebook, uncomment the below line to see interactive plot
 # output_notebook()
 
-p = figure(plot_width=600, plot_height=600)
+p = figure(plot_width=600, plot_height=600, aspect_ratio = 1, match_aspect = True)
 
 
 with open("shapes.txt") as f:
